@@ -32,11 +32,17 @@ To deactivate the environment you are in run:
 2. Right click on "CIFAR-10 python version" and click "Copy Link Address"
 3. Go to your CLI and go into the `data` directory.
 4. Run this cURL command to start downloading the dataset: `curl -O <URL of the link that you copied>`
-5. To extract the data from the .tar file run: `tar -xzvf <name of file>` (type `man tar` in your CLI to see the different options for running the tar command). 
+5. To extract the data from the .tar file run: `tar -xzvf <name of file>` (type `man tar` in your CLI to see the different options for running the tar command).
 **NOTE**: Each file in the directory contains a batch of images in CIFAR-10 that have been serialized using python's pickle module. You will have to first unpickle the data before loading it into your model.
+
+### Working with the dataset
+Please consider the format that the data is in and what format you will need to convert it into in order to train your model. If you are stuck on this, feel free to use Google.
 
 ### Using Tensorflow dataloaders
 Resource: https://www.tensorflow.org/guide/datasets
+
+###Resnet18 Architecture
+https://www.google.com/search?q=resnet+architecture&tbm=isch&source=iu&ictx=1&fir=nrwHYuY3M7ZNXM%253A%252CmlG8I6OjyTBN4M%252C_&vet=1&usg=AI4_-kRZVFcZ9REeELvn4BDXDpOJhFpNQg&sa=X&ved=2ahUKEwjd5NiphYjkAhVPKa0KHROtD3QQ9QEwBHoECAYQCQ#imgrc=eLRQQc-BgrBkxM:&vet=1
 
 ### Saving and Restoring Models
 Here is an excellent guide on how to save and restore models in tensorflow

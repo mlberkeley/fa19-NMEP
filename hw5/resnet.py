@@ -5,8 +5,9 @@ class ResNet():
         self.training = training
 
     def add_residual_block(self, input, block_number, in_channels, out_channels, downsample=False):
+        block_number = str(block_number)
         if downsample:
-            skip = tf.nn.max_pool(input, [1, 2, 2, 1], [1, 2, 2, 1], "VALID")
+            skip = tf.nn.max_pool2d(input, [1, 2, 2, 1], [1, 2, 2, 1], "VALID")
         else:
             skip = tf.identity(input)
 
@@ -26,20 +27,20 @@ class ResNet():
         layer = self.add_convolution(data, "Wconv0_0", 7, 3, 64, "SAME")
         layer = tf.layers.batch_normalization(layer, training=self.training)
         layer = tf.nn.relu(layer)
-        layer = tf.nn.max_pool(layer, [1, 3, 3, 1], [1, 2, 2, 1], "VALID")
+        layer = tf.nn.max_pool2d(layer, [1, 3, 3, 1], [1, 2, 2, 1], "VALID")
 
         #8 layers of residual blocks
-        layer = self.residual_block(layer, 1, 64, 64)
-        layer = self.residual_block(layer, 2, 64, 64)
+        layer = self.add_residual_block(layer, 1, 64, 64)
+        layer = self.add_residual_block(layer, 2, 64, 64)
 
-        layer = self.residual_block(layer, 3, 64, 128, downsample=True)
-        layer = self.residual_block(layer, 4, 128, 128)
+        layer = self.add_residual_block(layer, 3, 64, 128, downsample=True)
+        layer = self.add_residual_block(layer, 4, 128, 128)
 
-        layer = self.residual_block(layer, 5, 128, 256, downsample=True)
-        layer = self.residual_block(layer, 6, 256, 256)
+        layer = self.add_residual_block(layer, 5, 128, 256, downsample=True)
+        layer = self.add_residual_block(layer, 6, 256, 256)
 
-        layer = self.residual_block(layer, 7, 256, 512, downsample=True)
-        layer = self.residual_block(layer, 8, 512, 512)
+        layer = self.add_residual_block(layer, 7, 256, 512, downsample=True)
+        layer = self.add_residual_block(layer, 8, 512, 512)
 
         layer = self.add_convolution(layer, "Wconvf", 1, 512, 4, "SAME")
         #perform global average pooling on each feature map
@@ -54,6 +55,6 @@ class ResNet():
                         output_channels,
                         padding):
         shape = [filter_size, filter_size, input_channels, output_channels]
-        Wconv = tf.get_variable(name, shape=shape)
+        Wconv = tf.compat.v1.get_variable(name, shape=shape)
         layer = tf.nn.conv2d(input, Wconv, padding=padding)
         return layer

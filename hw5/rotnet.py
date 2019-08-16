@@ -27,25 +27,27 @@ class RotNet(object):
         self.learning_rate = self.config.learning_rate
 
     def build_base_graph(self):
-        handle = tf.placeholder(tf.string, shape=[])
-        iterator = tf.data.Iterator.from_string_handle(handle, output_types=(tf.float32, tf.int32))
-        X, y = iterator.get_next()
+        with tf.device('/cpu:0'):
+            handle = tf.placeholder(tf.string, shape=[])
+            iterator = tf.data.Iterator.from_string_handle(handle, output_types=(tf.float32, tf.int32))
+            X, y = iterator.get_next()
 
-        model = ResNet()
-        self.logits = model.forward(X)
-        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=y))
-
-        self.prob = tf.nn.softmax(logits)
-        self.predictions = tf.cast(tf.argmax(self.prob, axis=1), tf.float32)
-        actual = tf.cast(tf.argmax(y, axis=1), tf.float32)
-        self.acc = tf.reduce_mean(tf.cast(tf.equal(self.predictions, actual), tf.float32))
+        with tf.device('/gpu:0'):
+            model = ResNet()
+            self.logits = model.forward(X)
+            self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=y))
+            self.prob = tf.nn.softmax(logits)
+            self.predictions = tf.cast(tf.argmax(self.prob, axis=1), tf.float32)
+            actual = tf.cast(tf.argmax(y, axis=1), tf.float32)
+            self.acc = tf.reduce_mean(tf.cast(tf.equal(self.predictions, actual), tf.float32))
 
     def build_train_graph(self):
-        lr = tf.placeholder(dtype=tf.float32, name="Learning Rate")
-        self.opt = tf.RMSPropOptimizer(learning_rate=self.learning_rate,
-                                        decay=self.weight_decay,
-                                        momentum=self.momentum).minimize(self.loss)
-        self.saver = tf.train.Saver(max_to_keep=5)
+        with tf.device('/gpu:0'):
+            lr = tf.placeholder(dtype=tf.float32, name="Learning Rate")
+            self.opt = tf.RMSPropOptimizer(learning_rate=self.learning_rate,
+                                            decay=self.weight_decay,
+                                            momentum=self.momentum).minimize(self.loss)
+            self.saver = tf.train.Saver(max_to_keep=5)
 
     def train(self):
         data_obj = Data(self.data_dir,

@@ -13,7 +13,7 @@ parser.add_argument('--model_number', type=int, required=True)
 args = parser.parse_args()
 
 def main():
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         rotation_net = RotNet(sess, args)
         if args.train:
             rotation_net.train()

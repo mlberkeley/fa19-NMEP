@@ -2,11 +2,12 @@ import yaml
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from resnet import ResNet
+from data import Data
 
 class RotNet(object):
     def __init__(self, sess, args):
-        config = yaml.load(open(args.config, 'r'))
-        self.config = AttrDict(config)
+        print("[INFO] Reading configuration file.")
+        self.config = yaml.load(open(args.config, 'r'), Loader=yaml.FullLoader)
 
         self.sess = sess
         self.data_dir = args.data_dir
@@ -21,33 +22,34 @@ class RotNet(object):
             self.build_train_graph()
 
     def _populate_model_hyperparameters(self):
-        self.batch_size = self.config.batch_size
-        self.weight_decay = self.config.weight_decay
-        self.momentum = self.config.momentum
-        self.learning_rate = self.config.learning_rate
+        self.batch_size = self.config["batch_size"]
+        self.weight_decay = self.config["weight_decay"]
+        self.momentum = self.config["momentum"]
+        self.learning_rate = self.config["learning_rate"]
+        self.height = self.config["image_height"]
+        self.width = self.config["image_width"]
 
     def build_base_graph(self):
         with tf.device('/cpu:0'):
-            handle = tf.placeholder(tf.string, shape=[])
-            iterator = tf.data.Iterator.from_string_handle(handle, output_types=(tf.float32, tf.int32))
+            handle = tf.compat.v1.placeholder(tf.string, shape=[])
+            iterator = tf.compat.v1.data.Iterator.from_string_handle(handle, output_types=(tf.float32, tf.int32))
             X, y = iterator.get_next()
 
         with tf.device('/gpu:0'):
             model = ResNet()
             self.logits = model.forward(X)
             self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=y))
-            self.prob = tf.nn.softmax(logits)
+            self.prob = tf.nn.softmax(self.logits)
             self.predictions = tf.cast(tf.argmax(self.prob, axis=1), tf.float32)
             actual = tf.cast(tf.argmax(y, axis=1), tf.float32)
             self.acc = tf.reduce_mean(tf.cast(tf.equal(self.predictions, actual), tf.float32))
 
     def build_train_graph(self):
         with tf.device('/gpu:0'):
-            lr = tf.placeholder(dtype=tf.float32, name="Learning Rate")
-            self.opt = tf.RMSPropOptimizer(learning_rate=self.learning_rate,
+            self.opt = tf.compat.v1.train.RMSPropOptimizer(learning_rate=self.learning_rate,
                                             decay=self.weight_decay,
                                             momentum=self.momentum).minimize(self.loss)
-            self.saver = tf.train.Saver(max_to_keep=5)
+            self.saver = tf.compat.v1.train.Saver(max_to_keep=5)
 
     def train(self):
         data_obj = Data(self.data_dir,
@@ -87,8 +89,11 @@ class RotNet(object):
     #     pred = self.sess.run([self.predictions], feed_dict{X: data, y=None})
     #     return self.classes[pred]
 
-    # def restore_from_checkpoint(self):
-    #     return
+    def restore_from_checkpoint(self):
+        """
+        TODO
+        """
+        return
 
     def save_checkpoint(self, global_step, epoch):
         self.saver.save(self.sess,

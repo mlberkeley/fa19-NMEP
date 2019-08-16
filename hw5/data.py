@@ -6,7 +6,6 @@ from PIL import Image
 import imutils
 
 class Data(object):
-
     def __init__(self, data_dir, height, width, batch_size):
         self.data_dir = data_dir
         self.height = height
@@ -28,9 +27,15 @@ class Data(object):
         labels = []
         for i in range(1, 6):
             data = self._get_next_batch_from_file(i)
-            images.extend(list(data[b"data"]))
+            images.extend(list(self.convert_images(data[b"data"])))
             labels.extend(list(data[b"labels"]))
         return np.array(images), tf.keras.utils.to_categorical(np.array(labels))
+
+    def convert_images(self, raw_images):
+        images = raw_images / 255.0
+        images = raw_images.reshape([-1, 3, self.height, self.width])
+        images = images.transpose([0, 2, 3, 1])
+        return images
 
     def _get_next_batch_from_file(self, batch_number):
         data = self._unpickle_data(self.data_dir + self._get_batch_name(batch_number))
@@ -53,8 +58,6 @@ class Data(object):
         rot_images = []
         rotations = [90, 180, 270]
         for image in images:
-            image = image / 255.0
-            image = image.reshape([3, self.height, self.width]).transpose([1, 2, 0])
             rot_labels.append(0)
             rot_images.append(image)
             for i, angle in enumerate(rotations, 1):
@@ -65,9 +68,11 @@ class Data(object):
         return np.array(rot_images), tf.keras.utils.to_categorical(np.array(rot_labels))
 
     @staticmethod
-    def show_image(data):
+    def print_image_to_screen(data):
+        """
+        Used for debugging purposes.
+        """
         img = Image.fromarray(data, 'RGB')
-        img.save('my.png')
         img.show()
 
     @staticmethod

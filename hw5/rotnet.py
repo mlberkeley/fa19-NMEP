@@ -59,7 +59,7 @@ class RotNet(object):
                     )
 
         X, y = data_obj.get_training_data()
-        X_train, y_train, X_val, y_val = train_test_split(X, y, test_size=0.15 , shuffle=True)
+        X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15 , shuffle=True)
 
         training_handle = data_obj.get_rot_data_iterator(X_train, y_train)
         validation_handle = data_obj.get_rot_data_iterator(X_val, y_val)

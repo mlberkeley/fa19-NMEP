@@ -17,7 +17,7 @@ class Data(object):
         dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
         dataset = dataset.batch(self.batch_size)
         dataset = dataset.repeat()
-        dataset = dataset.map(preprocess, num_parallel_calls=2)
+        dataset = dataset.map(self.preprocess, num_parallel_calls=2)
         dataset = dataset.prefetch(self.batch_size)
         iterator = dataset.make_initializable_iterator()
         return iterator

@@ -1,6 +1,6 @@
 height: 32
 width: 32
-batch_size : 123
+batch_size : 512
 weight_decay : 0.0005
 momentum: 0.9
 learning_rate : 0.1

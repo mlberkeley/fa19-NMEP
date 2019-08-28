@@ -13,13 +13,16 @@ class Data(object):
         self.batch_size = batch_size
 
     def get_rot_data_iterator(self, images, labels):
+        images = tf.cast(images, dtype=tf.float32)
         dataset = tf.data.Dataset.from_tensor_slices((images, labels))
         dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
         dataset = dataset.batch(self.batch_size)
         dataset = dataset.repeat()
-        dataset = dataset.map(self.preprocess, num_parallel_calls=2)
+        #dataset = dataset.map(self.preprocess, num_parallel_calls=2)
         dataset = dataset.prefetch(self.batch_size)
         iterator = dataset.make_initializable_iterator()
+        print(tf.compat.v1.data.get_output_shapes(dataset))
+        print(tf.compat.v1.data.get_output_types(dataset))
         return iterator
 
     def get_training_data(self):
@@ -57,6 +60,7 @@ class Data(object):
         rot_labels = []
         rot_images = []
         rotations = [90, 180, 270]
+        images = tf.cast(images, dtype=tf.float32)
         for image in images:
             rot_labels.append(0)
             rot_images.append(image)

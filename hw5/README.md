@@ -40,6 +40,7 @@ Please consider the format that the data is in and what format you will need to 
 
 ### Using Tensorflow dataloaders
 Resource: https://www.tensorflow.org/guide/datasets
+This is an excellent Medium article on the different types of iterators and how to use them: https://medium.com/ymedialabs-innovation/how-to-use-dataset-and-iterators-in-tensorflow-with-code-samples-3bb98b6b74ab
 
 ###Resnet18 Architecture
 https://www.google.com/search?q=resnet+architecture&tbm=isch&source=iu&ictx=1&fir=nrwHYuY3M7ZNXM%253A%252CmlG8I6OjyTBN4M%252C_&vet=1&usg=AI4_-kRZVFcZ9REeELvn4BDXDpOJhFpNQg&sa=X&ved=2ahUKEwjd5NiphYjkAhVPKa0KHROtD3QQ9QEwBHoECAYQCQ#imgrc=eLRQQc-BgrBkxM:&vet=1

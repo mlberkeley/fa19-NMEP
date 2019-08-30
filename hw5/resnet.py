@@ -32,17 +32,21 @@ class ResNet():
         #8 layers of residual blocks
         layer = self.add_residual_block(layer, 1, 64, 64)
         layer = self.add_residual_block(layer, 2, 64, 64)
+        tf.print(tf.shape(layer))
 
         layer = self.add_residual_block(layer, 3, 64, 128)
         layer = self.add_residual_block(layer, 4, 128, 128)
+        tf.print(tf.shape(layer))
 
         layer = self.add_residual_block(layer, 5, 128, 256)
         layer = self.add_residual_block(layer, 6, 256, 256)
+        tf.print(tf.shape(layer))
 
         layer = self.add_residual_block(layer, 7, 256, 512)
         layer = self.add_residual_block(layer, 8, 512, 512)
+        tf.print(tf.shape(layer))
 
-        layer = self.add_convolution(layer, "Wconvf", 1, 512, 10, "SAME")
+        layer = self.add_convolution(layer, "Wconvf", 1, 512, 4, "SAME")
         #perform global average pooling on each feature map
         logits = tf.reduce_mean(layer, axis=[1,2])
         return logits

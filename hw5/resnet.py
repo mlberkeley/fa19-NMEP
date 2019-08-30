@@ -1,4 +1,5 @@
 import tensorflow as tf
+import sys
 
 class ResNet():
     def __init__(self, training=True):
@@ -24,6 +25,7 @@ class ResNet():
 
     def forward(self, data):
         #7x7 convolution followed by batchnorm, relu, maxpool
+        print("Starting forward pass")
         layer = self.add_convolution(data, "Wconv0_0", 7, 3, 64, "SAME")
         layer = tf.layers.batch_normalization(layer, training=self.training)
         layer = tf.compat.v1.nn.relu(layer)
@@ -32,19 +34,19 @@ class ResNet():
         #8 layers of residual blocks
         layer = self.add_residual_block(layer, 1, 64, 64)
         layer = self.add_residual_block(layer, 2, 64, 64)
-        tf.print(tf.shape(layer))
+        tf.print(tf.shape(layer), output_stream=sys.stdout)
 
         layer = self.add_residual_block(layer, 3, 64, 128)
         layer = self.add_residual_block(layer, 4, 128, 128)
-        tf.print(tf.shape(layer))
+        tf.print(tf.shape(layer), output_stream=sys.stdout)
 
         layer = self.add_residual_block(layer, 5, 128, 256)
         layer = self.add_residual_block(layer, 6, 256, 256)
-        tf.print(tf.shape(layer))
+        tf.print(tf.shape(layer), output_stream=sys.stdout)
 
         layer = self.add_residual_block(layer, 7, 256, 512)
         layer = self.add_residual_block(layer, 8, 512, 512)
-        tf.print(tf.shape(layer))
+        tf.print(tf.shape(layer), output_stream=sys.stdout)
 
         layer = self.add_convolution(layer, "Wconvf", 1, 512, 4, "SAME")
         #perform global average pooling on each feature map
@@ -61,5 +63,6 @@ class ResNet():
         shape = [filter_size, filter_size, input_channels, output_channels]
         Wconv = tf.compat.v1.get_variable(name, shape=shape)
         bconv = tf.compat.v1.get_variable(name + "b", shape=[output_channels])
+        tf.summary.histogram(name, Wconv)
         layer = tf.compat.v1.nn.convolution(input, Wconv, padding=padding, strides=[1, 1, 1, 1]) + bconv
         return layer

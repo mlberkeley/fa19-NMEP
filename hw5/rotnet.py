@@ -1,5 +1,6 @@
 import yaml
 import os
+import sys
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.python.client import device_lib
@@ -16,6 +17,7 @@ class RotNet(object):
         self.model_dir = "./checkpoints/"
         self.classes = ["0", "90", "180", "270"]
         self.model_number = args.model_number
+        self.model = ResNet()
 
         self._populate_model_hyperparameters()
         self.data_obj = Data(self.data_dir,
@@ -47,15 +49,16 @@ class RotNet(object):
 
         self.iterator = self.data_obj.get_rot_data_iterator(self.X, self.y, self.bs)
         data_X, data_y = self.iterator.get_next()
-        img_sum = tf.summary.image('train_images', data_X)
+        tf.summary.image('train_images', data_X)
         with tf.device('/cpu:0'):
-            model = ResNet()
-            self.logits = model.forward(data_X)
-            self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.logits, labels=data_y))
-            self.prob = tf.nn.softmax(self.logits)
+            logits = self.model.forward(data_X)
+            self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=data_y))
+            tf.summary.scalar('cross_entropy', self.loss)
+            self.prob = tf.nn.softmax(logits)
             self.predictions = tf.cast(tf.argmax(self.prob, axis=1), tf.float32)
             actual = tf.cast(tf.argmax(data_y, axis=1), tf.float32)
             self.acc = tf.reduce_mean(tf.cast(tf.equal(self.predictions, actual), tf.float32))
+            tf.summary.scalar('accuracy', self.acc)
 
     def build_train_graph(self):
         with tf.device('/cpu:0'):
@@ -69,7 +72,7 @@ class RotNet(object):
         else:
             self.start_epoch = 0
 
-        self.train_writer = tf.summary.FileWriter("./logs/train", self.sess.graph)
+        self.train_writer = tf.summary.FileWriter("./logs/train/" + self.model_number, self.sess.graph)
 
     def train(self):
         self.sess.run(tf.compat.v1.global_variables_initializer())
@@ -81,15 +84,17 @@ class RotNet(object):
 
         num_batches = int(len(X_train) / self.batch_size)
         global_step = 0
+        write_step = 0
         print("[INFO] Starting Training...")
         for epoch in range(self.start_epoch, self.num_epochs):
             global_step += 1
-            self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_train, self.y: y_train, self.bs: self.batch_size})
+            self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_train[:200], self.y: y_train[:200], self.bs: self.batch_size})
             for batch in range(num_batches):
                 self._update_learning_rate(epoch)
                 _, loss, accuracy, summary = self.sess.run([self.opt, self.loss, self.acc, self.summary])
-                self.train_writer.add_summary(summary)
+                self.train_writer.add_summary(summary, write_step)
                 print("Epoch: {0}, Batch: {1} ==> Accuracy: {2}, Loss: {3}".format(epoch, batch, accuracy, loss))
+                write_step += 1
 
             self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_val, self.y: y_val, self.bs: len(X_val)})
             loss, accuracy = self.sess.run([self.loss, self.acc])

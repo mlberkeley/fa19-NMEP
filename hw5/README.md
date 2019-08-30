@@ -10,11 +10,14 @@ In this project you will learn the following valuable skills:
 3. Using tensorboard to visualize training curves
 4. Training a model from scratch and frequently checkpointing models
 5. Visualizing the features of your network
+6. Implement good software engineering skills including the use of virtual environments and OOP
 
 ### Project Checkpoints
-1. Complete code logic. Set up AWS instance.
-2. Complete training and show results. Date: TBD
-3. Completed project with feature visualization and results is due on Monday at 8pm SHARP. NO EXCEPTIONS ON THIS DEADLINE.
+1. Read this paper by the Tuesday after lecture. https://arxiv.org/pdf/1803.07728.pdf
+2. Load and generate the rotation dataset. Start learning how to implement Tensorflow data loaders. Also make sure that you have your AWS account setup. Date: Thursday
+3. Complete the model architecture and training loop. Date: Saturday
+4. Debug mode and complete training and show results. Date: Wednesday (Please show up to Sunday OH to get help debugging your model)
+5. Completed project with feature visualization and results is due on Monday at 8pm SHARP. NO EXCEPTIONS ON THIS DEADLINE.
 
 ### Setting up your environment
 `pip3 install vitrualenv` (if not already installed)
@@ -42,9 +45,9 @@ Please consider the format that the data is in and what format you will need to 
 Resource: https://www.tensorflow.org/guide/datasets
 This is an excellent Medium article on the different types of iterators and how to use them: https://medium.com/ymedialabs-innovation/how-to-use-dataset-and-iterators-in-tensorflow-with-code-samples-3bb98b6b74ab
 
-###Resnet18 Architecture
+### Resnet18 Architecture
 https://www.google.com/search?q=resnet+architecture&tbm=isch&source=iu&ictx=1&fir=nrwHYuY3M7ZNXM%253A%252CmlG8I6OjyTBN4M%252C_&vet=1&usg=AI4_-kRZVFcZ9REeELvn4BDXDpOJhFpNQg&sa=X&ved=2ahUKEwjd5NiphYjkAhVPKa0KHROtD3QQ9QEwBHoECAYQCQ#imgrc=eLRQQc-BgrBkxM:&vet=1
 
 ### Saving and Restoring Models
-Here is an excellent guide on how to save and restore models in tensorflow
+Here is an excellent guide on how to save and restore models in Tensorflow
 https://cv-tricks.com/tensorflow-tutorial/save-restore-tensorflow-models-quick-complete-tutorial/

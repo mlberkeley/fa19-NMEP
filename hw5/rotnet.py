@@ -1,4 +1,5 @@
 import yaml
+import os
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.python.client import device_lib
@@ -7,7 +8,7 @@ from data import Data
 
 class RotNet(object):
     def __init__(self, sess, args):
-        print("[INFO] Reading configuration file.")
+        print("[INFO] Reading configuration file")
         self.config = yaml.load(open(args.config, 'r'), Loader=yaml.FullLoader)
 
         self.sess = sess
@@ -17,7 +18,7 @@ class RotNet(object):
         self.model_number = args.model_number
 
         self._populate_model_hyperparameters()
-        self.training_data_obj = Data(self.data_dir,
+        self.data_obj = Data(self.data_dir,
                             batch_size=self.batch_size,
                             height=self.height,
                             width=self.width
@@ -28,6 +29,7 @@ class RotNet(object):
             self.build_train_graph()
 
         print(device_lib.list_local_devices())
+        self.summary = tf.summary.merge_all()
 
     def _populate_model_hyperparameters(self):
         self.batch_size = self.config["batch_size"]
@@ -40,11 +42,12 @@ class RotNet(object):
 
     def build_base_graph(self):
         self.X = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, 32, 32, 3])
-        self.y = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, 10])
+        self.y = tf.compat.v1.placeholder(dtype=tf.float32, shape=[None, len(self.classes)])
+        self.bs = tf.compat.v1.placeholder(dtype=tf.int64, shape=[])
 
-        self.iterator = self.training_data_obj.get_rot_data_iterator(self.X, self.y)
+        self.iterator = self.data_obj.get_rot_data_iterator(self.X, self.y, self.bs)
         data_X, data_y = self.iterator.get_next()
-
+        img_sum = tf.summary.image('train_images', data_X)
         with tf.device('/cpu:0'):
             model = ResNet()
             self.logits = model.forward(data_X)
@@ -61,51 +64,63 @@ class RotNet(object):
                                             momentum=self.momentum).minimize(self.loss)
             self.saver = tf.compat.v1.train.Saver(max_to_keep=5)
 
+        if os.path.exists("./checkpoints/model{0}".format(self.model_number)):
+            self.start_epoch = self.restore_from_checkpoint()
+        else:
+            self.start_epoch = 0
+
+        self.train_writer = tf.summary.FileWriter("./logs/train", self.sess.graph)
+
     def train(self):
         self.sess.run(tf.compat.v1.global_variables_initializer())
 
-        X, y = self.training_data_obj.get_training_data()
+        X, y = self.data_obj.get_training_data()
         print(X.shape)
         print(y.shape)
         X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15 , shuffle=True)
 
-        #training_iterator = data_obj.get_rot_data_iterator(X_train, y_train)
-        #validation_iterator = data_obj.get_rot_data_iterator(X_val, y_val)
-
         num_batches = int(len(X_train) / self.batch_size)
         global_step = 0
         print("[INFO] Starting Training...")
-        for epoch in range(self.num_epochs):
-            self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_train, self.y: y_train})
+        for epoch in range(self.start_epoch, self.num_epochs):
+            global_step += 1
+            self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_train, self.y: y_train, self.bs: self.batch_size})
             for batch in range(num_batches):
                 self._update_learning_rate(epoch)
-                _, accuracy = self.sess.run([self.opt, self.acc])
-                global_step += 1
-                print("Epoch: {0}, Batch: {1} ==> Accuracy: {2}".format(epoch, batch, accuracy))
+                _, loss, accuracy, summary = self.sess.run([self.opt, self.loss, self.acc, self.summary])
+                self.train_writer.add_summary(summary)
+                print("Epoch: {0}, Batch: {1} ==> Accuracy: {2}, Loss: {3}".format(epoch, batch, accuracy, loss))
 
-            self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_val, self.y: y_val})
+            self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_val, self.y: y_val, self.bs: len(X_val)})
             loss, accuracy = self.sess.run([self.loss, self.acc])
-            print("(Validation) Epoch: {0} ===> Accuracy: {2}".format(epoch, accuracy))
+            print("(Validation) Epoch: {0} ===> Accuracy: {1}".format(epoch, accuracy))
             self.save_checkpoint(global_step, epoch)
 
-        # test_dataset = Data(self.data_dir,
-        #             batch_size=self.batch_size,
-        #             height=self.height,
-        #             width=self.width
-        #             )
-        # loss, accuracy = sess.run([self.loss, self.acc], feed_dict={})
-        # print("Test Accuracy: ", accuracy)
+        X_test, y_test = self.data_obj.get_test_data()
+        self.sess.run(self.iterator.initializer, feed_dict = {self.X: X_train, self.y: y_train, self.bs: len(X_train)})
+        loss, accuracy = self.sess.run([self.loss, self.acc])
+        print("Test Accuracy: ", accuracy)
 
-    # def predict(self, image_path):
-    #     data = Data.get_image(image_path)
-    #     pred = self.sess.run([self.predictions], feed_dict{X: data, y=None})
-    #     return self.classes[pred]
-
-    def restore_from_checkpoint(self):
+    def predict(self, image_path):
         """
         TODO
+        Gets the latest models and
         """
-        return
+        self.restore_from_checkpoint()
+        self.sess.run(tf.compat.v1.global_variables_initializer())
+        image = self.data_obj.load_image(image_path)
+        self.sess.run(self.iterator.initializer, feed_dict = {self.X: image, self.y: [0], self.bs: -1})
+        prediction = self.sess.run([self.predictions], feed_dict={})
+        return self.classes[prediction[0]]
+
+    def restore_from_checkpoint(self):
+        print("[INFO] Restoring model {0} from latest checkpoint".format(self.model_number))
+        checkpoint_dir = "./checkpoints/model{0}".format(self.model_number)
+        checkpoint = tf.compat.v1.train.latest_checkpoint(checkpoint_dir)
+        print("[DEBUG] Latest checkpoint file:", checkpoint)
+        start_epoch = 1 + int(checkpoint.split('.ckpt')[1].split('-')[1])
+        self.saver.restore(self.sess, checkpoint)
+        return start_epoch
 
     def save_checkpoint(self, global_step, epoch):
         self.saver.save(self.sess,

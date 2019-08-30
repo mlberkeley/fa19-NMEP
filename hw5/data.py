@@ -12,27 +12,24 @@ class Data(object):
         self.width = width
         self.batch_size = batch_size
 
-    def get_rot_data_iterator(self, images, labels):
+    def get_rot_data_iterator(self, images, labels, batch_size):
         images = tf.cast(images, dtype=tf.float32)
         dataset = tf.data.Dataset.from_tensor_slices((images, labels))
         dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
-        dataset = dataset.batch(self.batch_size)
+        dataset = dataset.batch(batch_size)
         dataset = dataset.repeat()
-        #dataset = dataset.map(self.preprocess, num_parallel_calls=2)
         dataset = dataset.prefetch(self.batch_size)
         iterator = dataset.make_initializable_iterator()
-        print(tf.compat.v1.data.get_output_shapes(dataset))
-        print(tf.compat.v1.data.get_output_types(dataset))
         return iterator
 
     def get_training_data(self):
+        print("[INFO] Getting Training Data")
         images = []
-        labels = []
         for i in range(1, 6):
             data = self._get_next_batch_from_file(i)
             images.extend(list(self.convert_images(data[b"data"])))
-            labels.extend(list(data[b"labels"]))
-        return np.array(images), tf.keras.utils.to_categorical(np.array(labels))
+        images, labels = self.preprocess(images)
+        return images, labels
 
     def convert_images(self, raw_images):
         images = raw_images / 255.0
@@ -54,13 +51,14 @@ class Data(object):
 
     def get_test_data(self):
          data = self._unpickle_data(self.data_dir + "test_batch")
-         return data[b"data"], tf.keras.utils.to_categorical(data[b"labels"])
+         images, labels = self.get_test_data(data[b"data"])
+         return images, labels
 
-    def preprocess(self, images, labels):
+    def preprocess(self, images):
+        print("[INFO] Generating Training Labels")
         rot_labels = []
         rot_images = []
         rotations = [90, 180, 270]
-        images = tf.cast(images, dtype=tf.float32)
         for image in images:
             rot_labels.append(0)
             rot_images.append(image)
@@ -70,6 +68,9 @@ class Data(object):
                 rot_labels.append(i)
 
         return np.array(rot_images), tf.keras.utils.to_categorical(np.array(rot_labels))
+
+    def load_image(self, image_path):
+        return
 
     @staticmethod
     def print_image_to_screen(data):

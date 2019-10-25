@@ -1,3 +1,4 @@
 ## FALL 2019 NMEP CURRICULUM
 
-Add all content in their respective folders. Don't push solutions yet. 
+Skeleton Code for Homeworks and Projects for Machine Learning at Berkeley's New Member Education Program for Fall 2019.
+

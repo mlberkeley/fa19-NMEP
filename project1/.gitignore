@@ -1,0 +1,6 @@
+/venv
+/logs
+/data
+/checkpoints
+/__pycache__
+.DS_Store
